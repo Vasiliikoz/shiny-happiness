@@ -50,14 +50,7 @@ class List{
 
 template <typename T>
 void sort(node<T>* first, node<T>* last, uint64_t size) {
-    if (size == 2) {
-        if (first->elmnt > last->elmnt) {
-            auto c = first->elmnt;
-            first->elmnt = last->elmnt;
-            last->elmnt = c;
-        }
-    }
-    if (size > 2) {
+    if (size > 1) {
         node<T>* mid1 = first;
         int64_t c = 1;
         while (c < size / 2) {
