@@ -1,127 +1,111 @@
 #include <iostream>
-#include <iomanip>
 
-using namespace std;
-
+template <typename T>
 struct node{
-    int64_t elmnt;
+    T elmnt;
     node* nxt;
 };
 
+template <typename T>
 class List{
-private:
-    int64_t size;
-    node* first;
-    node* last;
-public:
+ private:
+    node<T>* first;
+    node<T>* last;
+
+ public:
     List() {
-        size = 0;
         first = nullptr;
         last = nullptr;
     }
-    List(node* element,int64_t nsize,node* lastelement) {
-        first = element;
-        last = lastelement;
-        size = nsize;
-    }
-    void add(int64_t a) {
-        if (size == 0) {
-            node* element = new node;
-            element->elmnt = a;
-            element->nxt = nullptr;
-            first = element;
-            last = element;
-        } else {
-            node* element = new node;
-            last->nxt = element;
-            element->elmnt = a;
-            element->nxt = nullptr;
-            last = element;
+    ~List() {
+        node<T>* now = first;
+        node<T>* next = nullptr;
+        if (last != first)
+            next = now->nxt;
+        while (next != nullptr) {
+            delete now;
+            now = next;
+            next = next->nxt;
         }
-        size++;
+        delete(now);
     }
-    void inpart(node* element, int64_t val) {
+    void add(T a) {
+        node<T>* element = new node<T>;
+        element->elmnt = a;
+        element->nxt = nullptr;
+        if (first == nullptr) {
+            first = element;
+        } else {
+            last->nxt = element;
+        }
         last = element;
-        last->nxt = nullptr;
-        size = val;
     }
-    node* begin() {
+    node<T>* begin() {
         return first;
     }
-    node* rbegin() {
+    node<T>* rbegin() {
         return last;
-    }
-    int64_t asize() {
-        return size;
     }
 };
 
-void merge(node* a, node* b, int64_t sizenow) {
-    if (sizenow == 2) {
-        if (a->elmnt > b->elmnt) {
-            auto c = a->elmnt;
-            a->elmnt = b->elmnt;
-            b->elmnt = c;
+template <typename T>
+void sort(node<T>* first, node<T>* last, uint64_t size) {
+    if (size == 2) {
+        if (first->elmnt > last->elmnt) {
+            auto c = first->elmnt;
+            first->elmnt = last->elmnt;
+            last->elmnt = c;
         }
     }
-    if (sizenow > 2) {
-        auto mid1 = a;
+    if (size > 2) {
+        node<T>* mid1 = first;
         int64_t c = 1;
-        while (c < sizenow / 2) {
+        while (c < size / 2) {
             c++;
             mid1 = mid1->nxt;
         }
-        auto mid2 = mid1->nxt;
-        merge(a, mid1, sizenow / 2);
-        merge(mid2, b, sizenow - sizenow / 2);
-        List result;
-        auto l1 = a;
-        auto l2 = mid2;
-        while (result.asize() < sizenow) {
-            if (l1->elmnt <= l2->elmnt) {
-                result.add(l1->elmnt);
-                if (l1 != mid1) {
-                    l1 = l1->nxt;
-                } else {
-                    while (l2 != b) {
-                        result.add(l2->elmnt);
-                        l2 = l2->nxt;
-                    }
-                    result.add(l2->elmnt);
-                }
-            } else {
-                result.add(l2->elmnt);
-                if (l2 != b) {
-                    l2 = l2->nxt;
-                } else {
-                    while (l1 != mid1) {
-                        result.add(l1->elmnt);
-                        l1 = l1->nxt;
-                    }
-                    result.add(l1->elmnt);
-                }
-            }
+        node<T>* mid2 = mid1->nxt;
+        sort(first, mid1, size / 2);
+        sort(mid2, last, size - size / 2);
+        merge(first, mid1, mid2, last);
+    }
+}
+
+template <typename T>
+void merge(node<T>* first1, node<T>* last1, node<T>* first2, node<T>* last2) {
+    List<T> result;
+    node<T>* part1_iter = first1, * part2_iter = first2;
+    while (part1_iter != first2 && part2_iter != last2->nxt) {
+        if (part1_iter->elmnt <= part2_iter->elmnt) {
+            result.add(part1_iter->elmnt);
+            part1_iter = part1_iter->nxt;
+        } else {
+            result.add(part2_iter->elmnt);
+            part2_iter = part2_iter->nxt;
         }
-        auto it1 = a;
-        auto it2 = result.begin();
-        for (int i = 1; i <= sizenow; ++i) {
-            it1->elmnt = it2->elmnt;
-            it1 = it1->nxt;
-            it2 = it2->nxt;
-        }
+    }
+    while (part1_iter != first2) {
+        result.add(part1_iter->elmnt);
+        part1_iter = part1_iter->nxt;
+    }
+    node<T>* iter = first1;
+    for (node<T>* i = result.begin(); i != nullptr; i = i->nxt) {
+        iter->elmnt = i->elmnt;
+        iter = iter->nxt;
     }
 }
 
 int main() {
     int64_t n;
-    List arr;
-    cin >> n;
+    List<int64_t> arr;
+    std::cin >> n;
     for (int64_t i = 1; i <= n; ++i) {
         int64_t a;
-        cin >> a;
+        std::cin >> a;
         arr.add(a);
     }
-    merge(arr.begin(), arr.rbegin(), arr.asize());
+    sort(arr.begin(), arr.rbegin(), n);
     for (auto i = arr.begin(); i != nullptr; i = i->nxt)
-        cout << i->elmnt << " ";
+        std::cout << i->elmnt << " ";
+    arr.~List();
 }
