@@ -1,10 +1,19 @@
 #include <iostream>
+#include <utility>
+
 
 template <typename T>
 struct node{
     T elmnt;
     node* nxt;
 };
+
+template <typename T>
+void swap(node<T>*& first, node<T>*& second) {
+    node<T>* newnode = first;
+    first = second;
+    second = newnode;
+}
 
 template <typename T>
 class List{
@@ -49,18 +58,21 @@ class List{
 };
 
 template <typename T>
-void sort(node<T>* first, node<T>* last, uint64_t size) {
-    if (size > 1) {
-        node<T>* mid1 = first;
-        int64_t c = 1;
-        while (c < size / 2) {
-            c++;
-            mid1 = mid1->nxt;
+void sort(node<T>* first, node<T>* last) {
+    if (first != last) {
+        node<T>* newlast = first;
+        node<T>* ptr = first;
+        while (ptr != last) {
+            ptr = ptr->nxt;
+            if (ptr != last) {
+                newlast = newlast->nxt;
+                ptr = ptr->nxt;
+            }
         }
-        node<T>* mid2 = mid1->nxt;
-        sort(first, mid1, size / 2);
-        sort(mid2, last, size - size / 2);
-        merge(first, mid1, mid2, last);
+        node<T>* newfirst = newlast->nxt;
+        sort(first, newlast);
+        sort(newfirst, last);
+        merge(first, newlast, newfirst, last);
     }
 }
 
@@ -68,19 +80,24 @@ template <typename T>
 void merge(node<T>* first1, node<T>* last1, node<T>* first2, node<T>* last2) {
     List<T> result;
     node<T>* part1_iter = first1, * part2_iter = first2;
-    while (part1_iter != first2 && part2_iter != last2->nxt) {
-        if (part1_iter->elmnt <= part2_iter->elmnt) {
-            result.add(part1_iter->elmnt);
-            part1_iter = part1_iter->nxt;
+    node<T>* last = last2->nxt;
+    last1->nxt = nullptr;
+    last2->nxt = nullptr;
+    while (part1_iter != nullptr || part2_iter != nullptr) {
+        if (part1_iter == nullptr) {
+            swap(part1_iter, part2_iter);
         } else {
-            result.add(part2_iter->elmnt);
-            part2_iter = part2_iter->nxt;
+            if (part2_iter != nullptr) {
+                if (part2_iter->elmnt < part1_iter->elmnt) {
+                    swap(part1_iter, part2_iter);
+                }
+            }
         }
-    }
-    while (part1_iter != first2) {
         result.add(part1_iter->elmnt);
         part1_iter = part1_iter->nxt;
     }
+    last1->nxt = first2;
+    last2->nxt = last;
     node<T>* iter = first1;
     for (node<T>* i = result.begin(); i != nullptr; i = i->nxt) {
         iter->elmnt = i->elmnt;
@@ -97,7 +114,7 @@ int main() {
         std::cin >> a;
         arr.add(a);
     }
-    sort(arr.begin(), arr.rbegin(), n);
+    sort(arr.begin(), arr.rbegin());
     for (auto i = arr.begin(); i != nullptr; i = i->nxt)
         std::cout << i->elmnt << " ";
     arr.~List();
