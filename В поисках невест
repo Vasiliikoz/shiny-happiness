@@ -1,0 +1,138 @@
+#include <algorithm>
+#include <iomanip>
+#include <iostream>
+#include <vector>
+
+using namespace std;
+
+struct edge_s{
+    int64_t cost, flow, l, r, pot;
+};
+
+const int64_t big_num = 1000000000000;
+int64_t n, m, k;
+
+vector<edge_s> edge;
+vector<vector<int64_t>> List;
+vector<int64_t> dist;
+vector<int64_t> parent;
+vector<int64_t> pot;
+vector<bool> used_vertex, used_edge;
+
+int64_t min(int64_t o1, int64_t o2) {
+    if (o1 < o2)
+        return o1;
+    return o2;
+}
+
+void ford_bellman(){
+    for (int i = 0; i < n; i++)
+        for (int j = 0; j < 2 * m; j++)
+            if (dist[edge[j].r] > dist[edge[j].l] + edge[j].cost) {
+                dist[edge[j].r] = dist[edge[j].l] + edge[j].cost;
+                parent[edge[j].r] = j;
+            }
+}
+
+void dijkstra(){
+    int64_t min_dist = big_num, num = -1;
+    for (int i = 1; i <= n; i++)
+        if (!used_vertex[i] && pot[i] < min_dist) {
+            min_dist = pot[i];
+            num = i;
+        }
+    if (num == -1)
+        return;
+    used_vertex[num] = true;
+    for (int j = 0; j < List[num].size(); j++)
+        if (edge[List[num][j]].flow < 1 && !used_edge[List[num][j]])
+            if (pot[edge[List[num][j]].r] > pot[num] + edge[List[num][j]].pot) {
+                pot[edge[List[num][j]].r] = pot[num] + edge[List[num][j]].pot;
+                parent[edge[List[num][j]].r] = List[num][j];
+            }
+    dijkstra();
+}
+
+int main() {
+    cin >> n >> m >> k;
+    dist.resize(n + 1);
+    parent.resize(n + 1);
+    edge.resize(4 * m);
+    List.resize(n + 1);
+    used_edge.resize(4 * m);
+    for (int i = 0; i < m; i++) {
+        edge_s p;
+        cin >> p.l >> p.r >> p.cost;
+        p.flow = 0;
+        edge[i] = p;
+        List[p.l].push_back(i);
+        List[p.l].push_back(i + 3 * m);
+        List[p.r].push_back(i + m);
+        List[p.r].push_back(i + 2 * m);
+        swap(p.r, p.l);
+        edge[i + m] = p;
+        edge[i + 2 * m] = edge[i + m];
+        edge[i + 3 * m] = edge[i];
+        used_edge[i + 2 * m] = true;
+        used_edge[i + 3 * m] = true;
+    }
+    dist[1] = 0;
+    for (int i = 2; i <= n; i++)
+        dist[i] = big_num;
+    ford_bellman();
+    for (int i = 0; i < 2 * m; i++) {
+        edge[i].pot = edge[i].cost + dist[edge[i].l] - dist[edge[i].r];
+    }
+    for (int p = 0; p < k; p++) {
+        int64_t posnow = n;
+        if (dist[n] == big_num) {
+            cout << "-1\n";
+            exit(0);
+        }
+        while (posnow != 1) {
+            edge[parent[posnow]].flow++;
+            if (edge[parent[posnow]].flow == 0)
+                used_edge[parent[posnow]] = true;
+            edge[(parent[posnow] + 2 * m) % (4 * m)].flow--;
+            used_edge[(parent[posnow] + 2 * m) % (4 * m)] = false;
+            edge[(parent[posnow] + 2 * m) % (4 * m)].pot = 0;
+            posnow = edge[parent[posnow]].l;
+        }
+        used_vertex.resize(0);
+        used_vertex.resize(n + 1);
+        pot.resize(n + 1);
+        for (int i = 1; i <= n; i++) {
+            pot[i] = big_num;
+            parent[i] = -1;
+        }
+        pot[1] = 0;
+        dijkstra();
+        for (int i = 1; i <= n; i++)
+            dist[i] = pot[i];
+        for (int i = 0; i < 4 * m; i++)
+            edge[i].pot = dist[edge[i].l] + edge[i].pot - dist[edge[i].r];
+    }
+    vector<vector<int64_t>> answer;
+    answer.resize(n + 1);
+    double total_cost = 0.00;
+    for (int i = 0; i < 2 * m; i++)
+        if (edge[i].flow > 0) {
+            answer[edge[i].l].push_back(i);
+            total_cost += static_cast<double>(edge[i].cost);
+        }
+    double k1 = static_cast<double>(k);
+    cout << setprecision(10) << total_cost / k1 <<"\n";
+    for (int i = 0; i < k; i++) {
+        vector<int64_t> out_p;
+        int64_t pos_now = 1;
+        while (pos_now != n) {
+            out_p.push_back(answer[pos_now][answer[pos_now].size() - 1]);
+            answer[pos_now].pop_back();
+            pos_now = edge[out_p[out_p.size() - 1]].r;
+        }
+        cout << out_p.size() << " ";
+        for (int j = 0; j < out_p.size(); j++)
+            cout << out_p[j] % m + 1 << " ";
+        cout << "\n";
+    }
+}
